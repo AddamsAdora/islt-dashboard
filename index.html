@@ -1,0 +1,95 @@
+-- ══════════════════════════════════════════════════════════════
+-- FSU ISLT Dashboard — Database Schema
+-- Run this once in a fresh Supabase project (SQL Editor → New query).
+-- Creates every table the dashboard needs, in its final form —
+-- no migration history, no Dissertation/Milestones table (not
+-- used in this build). The app creates a barebones "Fall 2026"
+-- starter semester automatically on first connect; add every
+-- semester after that through the gear icon (Manage Semesters &
+-- Courses) — no SQL required going forward.
+-- ══════════════════════════════════════════════════════════════
+
+create table if not exists semesters (
+  id uuid primary key default gen_random_uuid(),
+  name text not null, term text, year int,
+  start_date date, end_date date,
+  is_current boolean default false,
+  created_at timestamptz default now()
+);
+
+create table if not exists courses (
+  id uuid primary key default gen_random_uuid(),
+  semester_id uuid references semesters(id) on delete cascade,
+  code text not null, name text not null,
+  instructor text, email text, credits int default 3,
+  color text default 'blue',
+  sort_order integer default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists assignments (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid references courses(id) on delete cascade,
+  name text not null, due_date date, weight numeric,
+  type text default 'assignment',
+  completed boolean default false,
+  grade numeric, notes text,
+  points numeric,
+  pass_fail boolean default false,
+  optional boolean default false,
+  sort_order integer default 0,
+  responses_required integer,
+  responses_done integer default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists readings (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid references courses(id) on delete cascade,
+  title text not null, citation text,
+  week_label text, url text,
+  is_read boolean default false,
+  sort_order integer default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists notes (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid, title text, body text not null,
+  tags text, module_label text,
+  assignment_id uuid,
+  semester_id uuid,
+  sort_order integer default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists connections (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  course_ids text,
+  semester_id uuid,
+  sort_order integer default 0,
+  created_at timestamptz default now()
+);
+
+-- Enable Row Level Security
+alter table semesters enable row level security;
+alter table courses enable row level security;
+alter table assignments enable row level security;
+alter table readings enable row level security;
+alter table notes enable row level security;
+alter table connections enable row level security;
+
+-- Open policies for personal use (single-user app, no login system)
+create policy "allow all" on semesters for all using (true) with check (true);
+create policy "allow all" on courses for all using (true) with check (true);
+create policy "allow all" on assignments for all using (true) with check (true);
+create policy "allow all" on readings for all using (true) with check (true);
+create policy "allow all" on notes for all using (true) with check (true);
+create policy "allow all" on connections for all using (true) with check (true);
+
+-- Grants
+grant all on table semesters, courses, assignments, readings, notes, connections
+to anon, authenticated;
