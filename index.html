@@ -1334,7 +1334,7 @@ Due Jul 31 at 11:59pm | -/24 pts"></textarea>
 // ────────────────────────────────────────────────
 let SB_URL = '', SB_KEY = '';
 let courses = [], assignments = [], readings = [], notes = [], semesters = [], connections = [];
-let viewingSemesterId = localStorage.getItem('viewing_semester_id') || null;
+let viewingSemesterId = localStorage.getItem('islt_viewing_semester_id') || null;
 
 function getViewingSemester() {
   if (viewingSemesterId) {
@@ -1346,7 +1346,7 @@ function getViewingSemester() {
 
 function setViewingSemester(id) {
   viewingSemesterId = id;
-  localStorage.setItem('viewing_semester_id', id);
+  localStorage.setItem('islt_viewing_semester_id', id);
   renderSemesterSwitcher();
   renderAll();
 }
@@ -1434,8 +1434,8 @@ async function connectSupabase() {
     showToast('Connection failed (' + res.status + ') — ' + (detail || 'check your URL and key'));
     return;
   }
-  localStorage.setItem('sb_url', SB_URL);
-  localStorage.setItem('sb_key', SB_KEY);
+  localStorage.setItem('islt_sb_url', SB_URL);
+  localStorage.setItem('islt_sb_key', SB_KEY);
   try {
     await launch();
   } catch (e) {
@@ -1462,7 +1462,7 @@ async function loadAll() {
     sbGet('readings'), sbGet('notes'),
     sbGet('connections','order=sort_order.asc')
   ]);
-  const raw = localStorage.getItem('discData');
+  const raw = localStorage.getItem('islt_discData');
   discData = raw ? JSON.parse(raw) : {};
 }
 
@@ -1476,7 +1476,7 @@ async function seedData() {
 
 // ── DARK MODE ─────────────────────────────────────
 function initDark() {
-  const saved = localStorage.getItem('darkMode');
+  const saved = localStorage.getItem('islt_darkMode');
   const dark = saved !== null ? saved !== 'false' : true;
   applyDark(dark);
 }
@@ -1486,7 +1486,7 @@ function toggleDarkMode() {
 }
 function applyDark(dark) {
   document.documentElement.setAttribute('data-theme', dark ? '' : 'light');
-  localStorage.setItem('darkMode', String(dark));
+  localStorage.setItem('islt_darkMode', String(dark));
   const btn = document.getElementById('darkBtn');
   if (btn) btn.innerHTML = dark ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
   const tog = document.getElementById('darkToggleDrawer');
@@ -1495,8 +1495,8 @@ function applyDark(dark) {
 
 // ── FONT CUSTOMIZATION ────────────────────────────
 function initFontPrefs() {
-  const savedScale = localStorage.getItem('fontScale') || '1';
-  const savedFace = localStorage.getItem('fontFace') || "'Barlow', sans-serif";
+  const savedScale = localStorage.getItem('islt_fontScale') || '1';
+  const savedFace = localStorage.getItem('islt_fontFace') || "'Barlow', sans-serif";
   document.documentElement.style.setProperty('--app-zoom', savedScale);
   document.documentElement.style.setProperty('--app-font', savedFace);
   const sizeSel = document.getElementById('fontSizeSelect');
@@ -1506,17 +1506,17 @@ function initFontPrefs() {
 }
 function setFontScale(scale) {
   document.documentElement.style.setProperty('--app-zoom', scale);
-  localStorage.setItem('fontScale', scale);
+  localStorage.setItem('islt_fontScale', scale);
 }
 function setFontFace(face) {
   document.documentElement.style.setProperty('--app-font', face);
-  localStorage.setItem('fontFace', face);
+  localStorage.setItem('islt_fontFace', face);
 }
 
 function resetConnection() {
   if (!confirm('Disconnect from this Supabase project? You will need to re-enter your Project URL and anon key next time — nothing in Supabase itself is deleted.')) return;
-  localStorage.removeItem('sb_url');
-  localStorage.removeItem('sb_key');
+  localStorage.removeItem('islt_sb_url');
+  localStorage.removeItem('islt_sb_key');
   location.reload();
 }
 
@@ -1836,14 +1836,14 @@ function renderToday() {
     <div style="font-size:11px;color:var(--text3);margin-top:6px">~${unread.length * 20} min remaining · ${Math.ceil(unread.length * 20 / Math.max(1, daysLeft))} min/day to finish</div>`;
 
   // ── DAILY REFLECTION PROMPT ──
-  const savedPromptIdx = parseInt(localStorage.getItem('todayPromptIdx') || '0');
+  const savedPromptIdx = parseInt(localStorage.getItem('islt_todayPromptIdx') || '0');
   document.getElementById('todayPrompt').textContent = '"' + REFLECTION_PROMPTS[savedPromptIdx % REFLECTION_PROMPTS.length] + '"';
 
   // Restore any saved draft
-  const draft = localStorage.getItem('todayReflectionDraft');
+  const draft = localStorage.getItem('islt_todayReflectionDraft');
   if (draft) document.getElementById('todayReflectionText').value = draft;
   document.getElementById('todayReflectionText').oninput = () => {
-    localStorage.setItem('todayReflectionDraft', document.getElementById('todayReflectionText').value);
+    localStorage.setItem('islt_todayReflectionDraft', document.getElementById('todayReflectionText').value);
   };
 }
 
@@ -1856,16 +1856,16 @@ async function toggleReadingById(id) {
 }
 
 function newTodayPrompt() {
-  const cur = parseInt(localStorage.getItem('todayPromptIdx') || '0');
+  const cur = parseInt(localStorage.getItem('islt_todayPromptIdx') || '0');
   const next = (cur + 1) % REFLECTION_PROMPTS.length;
-  localStorage.setItem('todayPromptIdx', next);
+  localStorage.setItem('islt_todayPromptIdx', next);
   document.getElementById('todayPrompt').textContent = '"' + REFLECTION_PROMPTS[next] + '"';
 }
 
 async function saveTodayReflection() {
   const text = document.getElementById('todayReflectionText').value.trim();
   if (!text) { showToast('Nothing to save'); return; }
-  const promptIdx = parseInt(localStorage.getItem('todayPromptIdx') || '0');
+  const promptIdx = parseInt(localStorage.getItem('islt_todayPromptIdx') || '0');
   const prompt = REFLECTION_PROMPTS[promptIdx % REFLECTION_PROMPTS.length];
   const now = new Date();
   const data = {
@@ -1877,7 +1877,7 @@ async function saveTodayReflection() {
   const r = await sb('POST', 'notes', data);
   notes.push(r[0]);
   document.getElementById('todayReflectionText').value = '';
-  localStorage.removeItem('todayReflectionDraft');
+  localStorage.removeItem('islt_todayReflectionDraft');
   showToast('Saved to Notes!');
 }
 
@@ -1962,11 +1962,11 @@ function renderDashboard() {
 }
 
 // ── ASSIGNMENTS ──────────────────────────────────
-let assignUnit = localStorage.getItem('assign_unit') || 'percent';
+let assignUnit = localStorage.getItem('islt_assign_unit') || 'percent';
 
 function setAssignUnit(unit) {
   assignUnit = unit;
-  localStorage.setItem('assign_unit', unit);
+  localStorage.setItem('islt_assign_unit', unit);
   renderAssignments();
 }
 
@@ -2479,7 +2479,7 @@ function setDiscPosts(week, n) {
       .sort((a,b) => a.posts - b.posts);
     discData['dropped_week'] = sorted[0].num;
   }
-  localStorage.setItem('discData', JSON.stringify(discData));
+  localStorage.setItem('islt_discData', JSON.stringify(discData));
   renderDiscussion();
 }
 
@@ -3800,8 +3800,8 @@ async function confirmAssignImport() {
 
 // ── STARTUP ──────────────────────────────────────
 (function init() {
-  SB_URL = localStorage.getItem('sb_url') || '';
-  SB_KEY = localStorage.getItem('sb_key') || '';
+  SB_URL = localStorage.getItem('islt_sb_url') || '';
+  SB_KEY = localStorage.getItem('islt_sb_key') || '';
   if (SB_URL && SB_KEY) {
     launch().catch(e => {
       console.error(e);
